@@ -3,8 +3,9 @@ PLAN: "feat: WebAuthn passkey ceremonies for the browser, with PRF support"
 TAG: v0.1.0
 EXECUTOR: jules
 REVIEWER: none
-STATUS: running
+STATUS: review
 SESSION: 10809142086678699384
+PR: https://github.com/tinywasm/webauthn/pull/1
 ---
 
 > This plan is dispatched via the CodeJob workflow. See skill: agents-workflow.
@@ -69,8 +70,13 @@ Two consequences that must be visible in this module's API:
     `tinywasm/fmt` to declare one error cost `tinywasm/base64` 74 KB; do not
     repeat that.
   - `syscall/js` and `github.com/tinywasm/await` are the only imports — see §4.
-- Base64url encoding/decoding is needed and must be written inline (~40 lines,
-  no padding, `-_` alphabet), not pulled from `encoding/base64`.
+- Base64url encoding/decoding is needed. **Use `github.com/tinywasm/base64`** —
+  its `URLEncode`/`URLDecode` are exactly this (RFC 4648 §5, unpadded, `-_`
+  alphabet, strict decoder) and that module has **zero dependencies**, so it
+  costs only the code you call. Do **not** use `encoding/base64`, and do **not**
+  write your own: `tinywasm/jwt` already consumes `base64.URLEncode` for the
+  same job, so a local copy here would be the ecosystem's third implementation
+  of one alphabet.
 
 **Prerequisite: `github.com/tinywasm/await` must be released before this
 module starts.** It blocks a goroutine on a JS `Promise` — exactly what
@@ -212,12 +218,21 @@ and orphans everything encrypted under the old one.
 | `create.go` | `CreateOptions`, `Credential`, `Create` |
 | `get.go` | `GetOptions`, `Assertion`, `Get` |
 | `prf.go` | building the `prf` extension object and reading its results |
-| `base64url.go` | encode/decode, no padding, zero imports |
 | `errors.go` | §5 |
-
-No `await.go` file: `Create`/`Get` block via `await.Promise` from
-`github.com/tinywasm/await`, imported, not written here.
 | `tests/` | see §8 |
+
+**Two files this module must NOT contain**, because each would duplicate a
+zero-dependency module that already exists:
+
+- no `base64url.go` — use `github.com/tinywasm/base64` (§3)
+- no `await.go` — `Create`/`Get` block via `await.Promise` from
+  `github.com/tinywasm/await`
+
+If either module is unavailable when you start, **stop and report it**. Do not
+vendor it, do not add a `replace` directive pointing at a local copy, and do
+not inline the implementation to keep going — a local stand-in silently becomes
+the ecosystem's second implementation, which is the exact outcome both modules
+exist to prevent.
 
 All files carry `//go:build wasm`.
 
@@ -226,10 +241,14 @@ All files carry `//go:build wasm`.
 WebAuthn cannot be exercised headlessly without a virtual authenticator, so the
 test strategy is split honestly rather than pretending:
 
-1. **Pure-Go units, no JS** — base64url round-trips against known vectors
-   (including inputs of length 1, 2 and 3 mod 3), option validation (a 15-byte
-   challenge yields `ErrBadChallenge`), and error mapping from a `DOMException`
-   name to the typed error. These run under `gotest` normally.
+1. **Pure-Go units, no JS** — option validation (a 15-byte challenge yields
+   `ErrBadChallenge`) and error mapping to the typed error. These run under
+   `gotest` normally. Do **not** test base64url here: it belongs to
+   `github.com/tinywasm/base64` and is covered there. Note that the error
+   mapper receives a **flattened string**, not a `js.Value` — `await.Promise`
+   already converted the rejection via the DOMException's `toString()`, which
+   yields `"Name: message"` — so the mapper recovers `ErrAborted` by matching
+   that string, and that is the only path worth testing.
 2. **JS shape assertions** — build the `publicKey` options object from a
    `CreateOptions` and assert the resulting `js.Value` has the expected keys,
    types and nesting (`extensions.prf` present only when `EnablePRF` is set).
