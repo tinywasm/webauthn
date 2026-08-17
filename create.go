@@ -6,6 +6,7 @@ import (
 	"syscall/js"
 
 	"github.com/tinywasm/await"
+	"github.com/tinywasm/base64"
 )
 
 // CreateOptions describes a registration ceremony.
@@ -148,7 +149,7 @@ func serializeCredentialCreationResponse(res js.Value) string {
 	}
 	rawIDBytes := arrayBufferToBytes(res.Get("rawId"))
 	if len(rawIDBytes) > 0 {
-		jsonObj.Set("rawId", base64URLEncode(rawIDBytes))
+		jsonObj.Set("rawId", base64.URLEncode(rawIDBytes))
 	}
 
 	resp := res.Get("response")
@@ -156,12 +157,12 @@ func serializeCredentialCreationResponse(res js.Value) string {
 		respObj := js.Global().Get("Object").New()
 		cdJSON := arrayBufferToBytes(resp.Get("clientDataJSON"))
 		if len(cdJSON) > 0 {
-			respObj.Set("clientDataJSON", base64URLEncode(cdJSON))
+			respObj.Set("clientDataJSON", base64.URLEncode(cdJSON))
 		}
 
 		attObj := arrayBufferToBytes(resp.Get("attestationObject"))
 		if len(attObj) > 0 {
-			respObj.Set("attestationObject", base64URLEncode(attObj))
+			respObj.Set("attestationObject", base64.URLEncode(attObj))
 		}
 
 		if !resp.Get("getTransports").IsUndefined() && !resp.Get("getTransports").IsNull() {
@@ -176,5 +177,5 @@ func serializeCredentialCreationResponse(res js.Value) string {
 	}
 
 	jsonStr := js.Global().Get("JSON").Call("stringify", jsonObj).String()
-	return base64URLEncode([]byte(jsonStr))
+	return base64.URLEncode([]byte(jsonStr))
 }

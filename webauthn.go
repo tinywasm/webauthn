@@ -69,23 +69,3 @@ func arrayBufferToBytes(v js.Value) []byte {
 	return b
 }
 
-func bytesToUint8Array(b []byte) js.Value {
-	ua := js.Global().Get("Uint8Array").New(len(b))
-	if len(b) > 0 {
-		js.CopyBytesToJS(ua, b)
-	}
-	return ua
-}
-
-func uint8ArrayToBytes(v js.Value) []byte {
-	if v.IsUndefined() || v.IsNull() {
-		return nil
-	}
-	length := v.Get("length").Int()
-	if length == 0 {
-		return nil
-	}
-	b := make([]byte, length)
-	js.CopyBytesToGo(b, v)
-	return b
-}

@@ -1,4 +1,5 @@
 # webauthn
+<img src="docs/img/badges.svg">
 
 `webauthn` provides WebAuthn passkey ceremonies for Go compiling to WebAssembly (`//go:build wasm`), with support for the PRF extension (deterministic secret derivation).
 

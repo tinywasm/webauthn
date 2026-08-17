@@ -3,7 +3,6 @@
 package webauthn
 
 import (
-	"syscall/js"
 	"testing"
 )
 
@@ -26,45 +25,35 @@ func TestErrorStrings(t *testing.T) {
 	}
 }
 
-func TestMapJSError(t *testing.T) {
+// TestMapAwaitError covers the only error path that actually runs: await.Promise
+// rejects with the DOMException's toString(), which is "Name: message", and
+// mapAwaitError has to recover the typed error from that flattened string.
+func TestMapAwaitError(t *testing.T) {
 	t.Run("NotAllowedError", func(t *testing.T) {
-		jsErr := js.Global().Get("Object").New()
-		jsErr.Set("name", "NotAllowedError")
-		jsErr.Set("message", "User denied approval")
-
-		err := mapJSError(jsErr)
+		err := mapAwaitError(Error("NotAllowedError: User denied approval"))
 		if err != ErrAborted {
 			t.Fatalf("expected ErrAborted, got %v", err)
 		}
 	})
 
 	t.Run("AbortError", func(t *testing.T) {
-		jsErr := js.Global().Get("Object").New()
-		jsErr.Set("name", "AbortError")
-		jsErr.Set("message", "Operation aborted")
-
-		err := mapJSError(jsErr)
+		err := mapAwaitError(Error("AbortError: Operation aborted"))
 		if err != ErrAborted {
 			t.Fatalf("expected ErrAborted, got %v", err)
 		}
 	})
 
-	t.Run("Other DOMException", func(t *testing.T) {
-		jsErr := js.Global().Get("Object").New()
-		jsErr.Set("name", "SecurityError")
-		jsErr.Set("message", "Relying party ID is invalid")
-
-		err := mapJSError(jsErr)
+	t.Run("Other DOMException is passed through", func(t *testing.T) {
+		err := mapAwaitError(Error("SecurityError: Relying party ID is invalid"))
 		expected := "webauthn: SecurityError: Relying party ID is invalid"
 		if err == nil || err.Error() != expected {
 			t.Fatalf("got %v, want %q", err, expected)
 		}
 	})
 
-	t.Run("MapAwaitError substring", func(t *testing.T) {
-		err := mapAwaitError(Error("NotAllowedError: user cancelled"))
-		if err != ErrAborted {
-			t.Fatalf("expected ErrAborted, got %v", err)
+	t.Run("nil stays nil", func(t *testing.T) {
+		if err := mapAwaitError(nil); err != nil {
+			t.Fatalf("expected nil, got %v", err)
 		}
 	})
 }

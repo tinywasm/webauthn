@@ -6,6 +6,7 @@ import (
 	"syscall/js"
 
 	"github.com/tinywasm/await"
+	"github.com/tinywasm/base64"
 )
 
 // GetOptions describes an assertion ceremony.
@@ -113,7 +114,7 @@ func serializeAssertionResponse(res js.Value) string {
 	}
 	rawIDBytes := arrayBufferToBytes(res.Get("rawId"))
 	if len(rawIDBytes) > 0 {
-		jsonObj.Set("rawId", base64URLEncode(rawIDBytes))
+		jsonObj.Set("rawId", base64.URLEncode(rawIDBytes))
 	}
 
 	resp := res.Get("response")
@@ -122,22 +123,22 @@ func serializeAssertionResponse(res js.Value) string {
 
 		cdJSON := arrayBufferToBytes(resp.Get("clientDataJSON"))
 		if len(cdJSON) > 0 {
-			respObj.Set("clientDataJSON", base64URLEncode(cdJSON))
+			respObj.Set("clientDataJSON", base64.URLEncode(cdJSON))
 		}
 
 		authData := arrayBufferToBytes(resp.Get("authenticatorData"))
 		if len(authData) > 0 {
-			respObj.Set("authenticatorData", base64URLEncode(authData))
+			respObj.Set("authenticatorData", base64.URLEncode(authData))
 		}
 
 		sig := arrayBufferToBytes(resp.Get("signature"))
 		if len(sig) > 0 {
-			respObj.Set("signature", base64URLEncode(sig))
+			respObj.Set("signature", base64.URLEncode(sig))
 		}
 
 		uHandle := arrayBufferToBytes(resp.Get("userHandle"))
 		if len(uHandle) > 0 {
-			respObj.Set("userHandle", base64URLEncode(uHandle))
+			respObj.Set("userHandle", base64.URLEncode(uHandle))
 		}
 
 		jsonObj.Set("response", respObj)
@@ -149,5 +150,5 @@ func serializeAssertionResponse(res js.Value) string {
 	}
 
 	jsonStr := js.Global().Get("JSON").Call("stringify", jsonObj).String()
-	return base64URLEncode([]byte(jsonStr))
+	return base64.URLEncode([]byte(jsonStr))
 }
