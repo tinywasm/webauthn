@@ -15,7 +15,7 @@ type CreateOptions struct {
 	RPName           string
 	UserID           []byte // opaque, stable, never the email
 	UserName         string // shown in the account picker
-	UserDisplayName string
+	UserDisplayName  string
 	Challenge        []byte // 32 random bytes; server-issued for auth, local for encryption
 	ResidentKey      bool   // true for a discoverable passkey
 	UserVerification string // "required" | "preferred" | "discouraged"

@@ -68,4 +68,3 @@ func arrayBufferToBytes(v js.Value) []byte {
 	js.CopyBytesToGo(b, ua)
 	return b
 }
-
